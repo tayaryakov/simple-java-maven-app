@@ -12,7 +12,6 @@ jobs:
   ci:
     runs-on: ubuntu-22.04
 
-    # Ignore this job if it was triggered by a commit this workflow performed
     if: github.actor != 'github-actions'
 
     steps:
@@ -26,10 +25,8 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Set up Maven
-      uses: s4u/setup-maven@v2
-      with:
-        maven-version: '3.9.5'
+    - name: Install Maven
+      run: sudo apt-get update && sudo apt-get install -y maven
 
     - name: Build jar and Test
       run: |
@@ -38,13 +35,8 @@ jobs:
 
     - name: Increment version
       run: |
-        # Get the current version from the pom file
         current_version=$(grep -o '<version>.*</version>' pom.xml | head -n1 | sed 's/<[^>]*>//g')
-
-        # Increase the patch part
         new_version=$(echo $current_version | awk -F. '{$NF = $NF + 1} 1' | sed 's/ /./g')
-
-        # Store versions in the job's environment
         echo "CURRENT_VERSION=$current_version" >> $GITHUB_ENV
         echo "NEW_VERSION=$new_version" >> $GITHUB_ENV
 
@@ -57,23 +49,14 @@ jobs:
 
     - name: Push to DockerHub
       run: |
-        # Push with latest tag
         docker push ${{ env.DOCKER_IMAGE }}:latest
-        
-        # Push with version tag
-        docker tag ${{ env.DOCKER_IMAGE }} ${{ env.DOCKER_IMAGE }}:${{ env.NEW_VERSION }}
-        docker push ${{ env.DOCKER_IMAGE }}:${{ env.NEW_VERSION }}
+        docker tag ${{ env.DOCKER_IMAGE }} ${{ env.DOCKER_IMAGE }}:${{ env.NEW_VERSION }} 
+        docker push ${{ env.DOCKER_IMAGE }}:${{ env.NEW_VERSION }} 
 
     - name: Update version
       run: |
-        # Config git identity
         git config --local user.email "github-actions"
         git config --local user.name "github-actions"
-
-        echo "The previous version is ${{ env.CURRENT_VERSION }}"
-        echo "The new version is ${{ env.NEW_VERSION }}"
-        
-        # Update pom file and push to repo
         sed -i "s/${{ env.CURRENT_VERSION }}/${{ env.NEW_VERSION }}/" pom.xml
         git add pom.xml
         git commit -m "Update version in pom.xml"
