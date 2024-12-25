@@ -19,17 +19,20 @@ jobs:
 
     - name: Check out repository code
       uses: actions/checkout@v4
-  
 
     - name: Set up Java
       uses: actions/setup-java@v2
       with:
-        java-version: '11'
-        distribution: 'adopt'
-          
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Set up Maven
+      uses: s4u/setup-maven@v2
+      with:
+        maven-version: '3.9.5'
 
     - name: Build jar and Test
-      run : |
+      run: |
         mvn -B -DskipTests clean package
         mvn test
 
@@ -44,26 +47,22 @@ jobs:
         # Store versions in the job's environment
         echo "CURRENT_VERSION=$current_version" >> $GITHUB_ENV
         echo "NEW_VERSION=$new_version" >> $GITHUB_ENV
-    
 
     - name: Build Docker Image
       run: |
         docker build --file ./docker/dockerfile --tag ${{ env.DOCKER_IMAGE }} .
 
-        
     - name: Log in to DockerHub
       run: echo "${{ secrets.DOCKERHUB_ACCESS_TOKEN }}" | docker login --username ${{ secrets.DOCKERHUB_USER }} --password-stdin
 
-        
     - name: Push to DockerHub
       run: |
         # Push with latest tag
         docker push ${{ env.DOCKER_IMAGE }}:latest
         
         # Push with version tag
-        docker tag ${{ env.DOCKER_IMAGE }} ${{ env.DOCKER_IMAGE }}:${{ env.NEW_VERSION }} 
-        docker push ${{ env.DOCKER_IMAGE }}:${{ env.NEW_VERSION }} 
-
+        docker tag ${{ env.DOCKER_IMAGE }} ${{ env.DOCKER_IMAGE }}:${{ env.NEW_VERSION }}
+        docker push ${{ env.DOCKER_IMAGE }}:${{ env.NEW_VERSION }}
 
     - name: Update version
       run: |
