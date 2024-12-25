@@ -70,5 +70,23 @@ jobs:
         git commit -m "Update version in pom.xml"
         git push
 
+  cd:
+    needs: ci
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Deploy container on EC2 host
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST_IP }}
+        username: ${{ secrets.HOST_USER }}
+        key: ${{ secrets.HOST_PRIVATE_KEY }}          
+
+        script: |
+          docker pull ${{ env.DOCKER_IMAGE }}
+          docker stop my-app
+          docker rm my-app
+          docker run --name my-app --restart always ${{ env.DOCKER_IMAGE }}
 
 
