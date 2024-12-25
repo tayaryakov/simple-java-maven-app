@@ -30,8 +30,11 @@ jobs:
         wget https://dlcdn.apache.org/maven/maven-3/3.9.5/binaries/apache-maven-3.9.5-bin.tar.gz
         tar -xvzf apache-maven-3.9.5-bin.tar.gz
         sudo mv apache-maven-3.9.5 /opt/maven
+        sudo rm -f /usr/bin/mvn
         sudo ln -s /opt/maven/bin/mvn /usr/bin/mvn
 
+    - name: Verify Maven version
+      run: mvn -version
 
     - name: Build jar and Test
       run: |
